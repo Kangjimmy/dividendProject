@@ -1,11 +1,16 @@
 package com.dayone.web;
 
 import com.dayone.model.Company;
+import com.dayone.persist.entity.CompanyEntity;
 import com.dayone.service.CompanyService;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.ObjectUtils;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/company")
@@ -16,12 +21,15 @@ public class CompanyController {
 
     @GetMapping("/autocomplete")
     public ResponseEntity<?> autocomplete(@RequestParam String keyword) {
-        return null;
+        var result = companyService.getCompanyNamesByKeyword(keyword);
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping
-    public ResponseEntity<?> searchCompany() {
-        return null;
+    public ResponseEntity<?> searchCompany(final Pageable pageable) {
+        Page<CompanyEntity> companies = companyService.getAllCompany(pageable);
+
+        return ResponseEntity.ok(companies);
     }
 
     @PostMapping
@@ -31,6 +39,7 @@ public class CompanyController {
             throw new RuntimeException("ticker is empty");
         }
         Company company = companyService.save(ticker);
+        companyService.addAutoCompleteKeyword(company.getName());
 
         return ResponseEntity.ok(company);
     }
