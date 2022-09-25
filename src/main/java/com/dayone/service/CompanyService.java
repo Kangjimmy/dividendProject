@@ -1,5 +1,6 @@
 package com.dayone.service;
 
+import com.dayone.exception.impl.NoCompanyException;
 import com.dayone.model.Company;
 import com.dayone.model.ScrapedResult;
 import com.dayone.persist.entity.CompanyEntity;
@@ -13,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
 
 import java.util.List;
@@ -63,6 +65,7 @@ public class CompanyService {
                 .map((m)-> m.getName()).collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public Page<CompanyEntity> getAllCompany(Pageable pageable) {
         return companyRepository.findAll(pageable);
     }
@@ -78,5 +81,18 @@ public class CompanyService {
 
     public void deleteAutoCompleteKeyword(String keyword) {
         trie.remove(keyword);
+    }
+
+    public String deleteCompany(String ticker) {
+
+        CompanyEntity companyEntity = companyRepository.findByTicker(ticker)
+                .orElseThrow(() -> new NoCompanyException());
+
+        dividendRepository.deleteAllByCompanyId(companyEntity.getId());
+        companyRepository.delete(companyEntity);
+
+        deleteAutoCompleteKeyword(companyEntity.getName());
+
+        return companyEntity.getName();
     }
 }
